@@ -1,23 +1,72 @@
-<?php
-if (empty($_POST['name']) || empty($_POST['subject']) || empty($_POST['message']) || !filter_var($_POST['email'], FILTER_VALIDATE_EMAIL)) {
-    echo 'error';
-    exit();
-}
+$(function () {
+    $("#contactForm input, #contactForm textarea").jqBootstrapValidation({
+        preventSubmit: true,
+        submitError: function ($form, event, errors) {
+        },
+        submitSuccess: function ($form, event) {
+            event.preventDefault();
+            var name = $("input#name").val();
+            var email = $("input#email").val();
+            var subject = $("input#subject").val();
+            var message = $("textarea#message").val();
 
-$name = strip_tags(htmlspecialchars($_POST['name']));
-$email = strip_tags(htmlspecialchars($_POST['email']));
-$m_subject = strip_tags(htmlspecialchars($_POST['subject']));
-$message = strip_tags(htmlspecialchars($_POST['message']));
+            $this = $("#sendMessageButton");
+            $this.prop("disabled", true);
 
-$to = "christinjohnymankuthel@gmail.com"; // Change this email to your own
-$subject = "$m_subject:  $name";
-$body = "You have received a new message from your website contact form.\n\n"."Here are the details:\n\nName: $name\n\n\nEmail: $email\n\nSubject: $m_subject\n\nMessage: $message";
-$header = "From: $email\r\n";
-$header .= "Reply-To: $email\r\n";
+            $.ajax({
+                url: "contact.php",
+                type: "POST",
+                data: {
+                    name: name,
+                    email: email,
+                    subject: subject,
+                    message: message
+                },
+                cache: false,
+                success: function (response) {
+                    if(response === 'success') {
+                        $('#success').html("<div class='alert alert-success'>");
+                        $('#success > .alert-success').html("<button type='button' class='close' data-dismiss='alert' aria-hidden='true'>&times;")
+                                .append("</button>");
+                        $('#success > .alert-success')
+                                .append("<strong>Your message has been sent. </strong>");
+                        $('#success > .alert-success')
+                                .append('</div>');
+                    } else {
+                        $('#success').html("<div class='alert alert-danger'>");
+                        $('#success > .alert-danger').html("<button type='button' class='close' data-dismiss='alert' aria-hidden='true'>&times;")
+                                .append("</button>");
+                        $('#success > .alert-danger').append($("<strong>").text("Sorry, it seems that our mail server is not responding. Please try again later!"));
+                        $('#success > .alert-danger').append('</div>');
+                    }
+                    $('#contactForm').trigger("reset");
+                },
+                error: function () {
+                    $('#success').html("<div class='alert alert-danger'>");
+                    $('#success > .alert-danger').html("<button type='button' class='close' data-dismiss='alert' aria-hidden='true'>&times;")
+                            .append("</button>");
+                    $('#success > .alert-danger').append($("<strong>").text("Sorry, something went wrong. Please try again later!"));
+                    $('#success > .alert-danger').append('</div>');
+                    $('#contactForm').trigger("reset");
+                },
+                complete: function () {
+                    setTimeout(function () {
+                        $this.prop("disabled", false);
+                    }, 1000);
+                }
+            });
+        },
+        filter: function () {
+            return $(this).is(":visible");
+        },
+    });
 
-if (mail($to, $subject, $body, $header)) {
-    echo 'success';
-} else {
-    echo 'error';
-}
-?>
+    $("a[data-toggle=\"tab\"]").click(function (e) {
+        e.preventDefault();
+        $(this).tab("show");
+    });
+});
+
+$('#name').focus(function () {
+    $('#success').html('');
+});
